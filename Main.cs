@@ -11,6 +11,7 @@
 
     public class Main : Form
     {
+        private bool m_isImageFlipped = false;
         private Color m_ChromaColor = Color.LimeGreen;
         private bool m_IsPickingChromaColor = false;
         private bool m_IsSnipped = false;
@@ -118,53 +119,67 @@
 
         private void InitializeComponent()
         {
-            this.components = new Container();
-            ComponentResourceManager manager = new ComponentResourceManager(typeof(Main));
-            this.comboWindows = new ComboBox();
-            this.timer = new Timer(this.components);
-            this.pictureBoxChromaColor = new DoubleBufferedPictureBox(this.components);
-            this.pictureBox = new DoubleBufferedPictureBox(this.components);
-            ((ISupportInitialize) this.pictureBoxChromaColor).BeginInit();
-            ((ISupportInitialize) this.pictureBox).BeginInit();
-            base.SuspendLayout();
+            this.components = new System.ComponentModel.Container();
+            this.comboWindows = new System.Windows.Forms.ComboBox();
+            this.timer = new System.Windows.Forms.Timer(this.components);
+            this.pictureBoxChromaColor = new DisembodiedHeads.DoubleBufferedPictureBox(this.components);
+            this.pictureBox = new DisembodiedHeads.DoubleBufferedPictureBox(this.components);
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxChromaColor)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).BeginInit();
+            this.SuspendLayout();
+            // 
+            // comboWindows
+            // 
             this.comboWindows.FormattingEnabled = true;
-            this.comboWindows.Location = new Point(0, 0);
+            this.comboWindows.Location = new System.Drawing.Point(0, 0);
             this.comboWindows.Name = "comboWindows";
-            this.comboWindows.Size = new Size(0x2fe, 0x15);
+            this.comboWindows.Size = new System.Drawing.Size(766, 21);
             this.comboWindows.TabIndex = 1;
-            this.comboWindows.SelectedValueChanged += new EventHandler(this.comboWindows_SelectedValueChanged);
+            this.comboWindows.SelectedValueChanged += new System.EventHandler(this.comboWindows_SelectedValueChanged);
+            // 
+            // timer
+            // 
             this.timer.Interval = 1;
-            this.timer.Tick += new EventHandler(this.timer_Tick);
-            this.pictureBoxChromaColor.BorderStyle = BorderStyle.FixedSingle;
-            this.pictureBoxChromaColor.Location = new Point(0x305, 0);
+            this.timer.Tick += new System.EventHandler(this.timer_Tick);
+            // 
+            // pictureBoxChromaColor
+            // 
+            this.pictureBoxChromaColor.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBoxChromaColor.Location = new System.Drawing.Point(773, 0);
             this.pictureBoxChromaColor.Name = "pictureBoxChromaColor";
-            this.pictureBoxChromaColor.Size = new Size(0x15, 0x15);
+            this.pictureBoxChromaColor.Size = new System.Drawing.Size(21, 21);
             this.pictureBoxChromaColor.TabIndex = 3;
             this.pictureBoxChromaColor.TabStop = false;
-            this.pictureBoxChromaColor.MouseUp += new MouseEventHandler(this.pictureBoxChromaColor_MouseUp);
-            this.pictureBox.BackgroundImageLayout = ImageLayout.None;
-            this.pictureBox.Dock = DockStyle.Fill;
-            this.pictureBox.Location = new Point(0, 0);
+            this.pictureBoxChromaColor.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBoxChromaColor_MouseUp);
+            // 
+            // pictureBox
+            // 
+            this.pictureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pictureBox.Location = new System.Drawing.Point(0, 0);
             this.pictureBox.Name = "pictureBox";
-            this.pictureBox.Size = new Size(800, 450);
+            this.pictureBox.Size = new System.Drawing.Size(800, 450);
             this.pictureBox.TabIndex = 2;
             this.pictureBox.TabStop = false;
-            this.pictureBox.MouseDown += new MouseEventHandler(this.Main_MouseDown);
-            this.pictureBox.MouseMove += new MouseEventHandler(this.Main_MouseMove);
-            this.pictureBox.MouseUp += new MouseEventHandler(this.Main_MouseUp);
-            base.AutoScaleDimensions = new SizeF(6f, 13f);
-            base.AutoScaleMode = AutoScaleMode.Font;
-            this.BackgroundImageLayout = ImageLayout.None;
-            base.ClientSize = new Size(800, 450);
-            base.Controls.Add(this.pictureBoxChromaColor);
-            base.Controls.Add(this.comboWindows);
-            base.Controls.Add(this.pictureBox);
-            //base.Icon = (Icon) manager.GetObject("$this.Icon");
-            base.Name = "Main";
+            this.pictureBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Main_MouseDown);
+            this.pictureBox.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Main_MouseMove);
+            this.pictureBox.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Main_MouseUp);
+            // 
+            // Main
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.pictureBoxChromaColor);
+            this.Controls.Add(this.comboWindows);
+            this.Controls.Add(this.pictureBox);
+            this.Name = "Main";
             this.Text = "Disembodied Heads";
-            ((ISupportInitialize) this.pictureBoxChromaColor).EndInit();
-            ((ISupportInitialize) this.pictureBox).EndInit();
-            base.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxChromaColor)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).EndInit();
+            this.ResumeLayout(false);
+
         }
 
         private void InitializeForm()
@@ -268,14 +283,21 @@
                     base.Location = new Point(base.Location.X + clientRectangle.X, base.Location.Y + clientRectangle.Y);
                 }
             }
-            if (((e.Button == MouseButtons.Middle) && !this.m_IsPickingChromaColor) && !this.m_IsFramelessMode)
+            if (((e.Button == MouseButtons.Middle) && !this.m_IsPickingChromaColor))
             {
-                ((ScreenWindow) this.comboWindows.SelectedItem).SelectedRectangle = Rectangle.Empty;
-                base.Size = this.m_PreviousSize;
-                base.WindowState = this.m_PreviousWindowState;
-                this.m_ImageScale = 1f;
-                this.m_IsSnipped = false;
-                this.Toggle(true);
+                if (!this.m_IsFramelessMode)
+                {
+                    ((ScreenWindow)this.comboWindows.SelectedItem).SelectedRectangle = Rectangle.Empty;
+                    base.Size = this.m_PreviousSize;
+                    base.WindowState = this.m_PreviousWindowState;
+                    this.m_ImageScale = 1f;
+                    this.m_IsSnipped = false;
+                    this.Toggle(true);
+                }else
+                {
+                    //Flip the Image
+                    m_isImageFlipped = !m_isImageFlipped;
+                }
             }
         }
 
@@ -311,8 +333,24 @@
                     float num3 = original.Width * this.m_ImageScale;
                     float num4 = original.Height * this.m_ImageScale;
                     Bitmap bitmap = new Bitmap(original, new Size((int) num3, (int) num4));
+                    //~
+                    if (m_IsFramelessMode)
+                    {
+                        Bitmap orig = new Bitmap(original, new Size((int)num3, (int)num4));
+                        ScreenCapture.ApplyChromaKey3(bitmap, m_ChromaColor);
+                    }
+                    //~
                     original.Dispose();
                     this.pictureBox.Image = bitmap;
+                    if (m_isImageFlipped)
+                    {
+                        this.pictureBox.Image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    }
+                    else
+                    {
+                        this.pictureBox.Image.RotateFlip(RotateFlipType.RotateNoneFlipNone);
+                    }
+
                     if (!(this.m_ImageScale == this.m_PreviousImageScale))
                     {
                         this.AutoSizeWindow(new Rectangle(0, 0, (int) num3, (int) num4));
@@ -344,6 +382,7 @@
             {
                 this.BackColor = Color.Empty;
                 base.TransparencyKey = Color.Empty;
+
                 base.FormBorderStyle = FormBorderStyle.Sizable;
                 if (this.m_IsSnipped)
                 {

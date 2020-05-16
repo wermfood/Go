@@ -3,15 +3,81 @@
     using Cyotek.Demo.SimpleScreenshotCapture;
     using System;
     using System.Drawing;
+    using System.Xml;
 
     public class ScreenCapture
     {
-        private static void ApplyChromaKey(Image img)
+        public static void ApplyChromaKey2(Bitmap input,Bitmap output,Color chromaKeyColor)
+        {
+            // Iterate over all piels from top to bottom...
+            for (int y = 0; y < output.Height; y++)
+            {
+                // ...and from left to right
+                for (int x = 0; x < output.Width; x++)
+                {
+                    // Determine the pixel color
+                    //~Color camColor = chromaKeyColor;
+                    Color camColor = input.GetPixel(x, y);
+
+                    // Every component (red, green, and blue) can have a value from 0 to 255, so determine the extremes
+                    byte max = Math.Max(Math.Max(camColor.R, camColor.G), camColor.B);
+                    byte min = Math.Min(Math.Min(camColor.R, camColor.G), camColor.B);
+
+                    // Should the pixel be masked/replaced?
+                    bool replace =
+                        camColor.G != min // green is not the smallest value
+                        && (camColor.G == max // green is the biggest value
+                        || max - camColor.G < 8) // or at least almost the biggest value
+                        && (max - min) > 96; // minimum difference between smallest/biggest value (avoid grays)
+
+                    if (replace)
+                        camColor = Color.Transparent;//~Color.Magenta;
+
+                    // Set the output pixel
+                    output.SetPixel(x, y, camColor);
+                }
+            }
+        }
+
+        public static void ApplyChromaKey3(Bitmap img, Color chromaKeyColor)
+        {
+            LockBitmap bitmap = new LockBitmap(img);
+            bitmap.LockBits();
+            //Color pixel = bitmap2.GetPixel(0, 0);
+            Color pixel = chromaKeyColor;
+            Color transparent = Color.Transparent;
+            int y = 0;
+            while (true)
+            {
+                if (y >= bitmap.Height)
+                {
+                    bitmap.UnlockBits();
+                    return;
+                }
+                int x = 0;
+                while (true)
+                {
+                    if (x >= bitmap.Width)
+                    {
+                        y++;
+                        break;
+                    }
+                    if (ColorWithinRange(pixel, bitmap.GetPixel(x, y)))
+                    {
+                        bitmap.SetPixel(x, y, transparent);
+                    }
+                    x++;
+                }
+            }
+        }
+
+        public static void ApplyChromaKey(Image img,Color chromaKeyColor)
         {
             LockBitmap bitmap2 = new LockBitmap(new Bitmap(img));
             bitmap2.LockBits();
-            Color pixel = bitmap2.GetPixel(0, 0);
-            Color transparent = Color.Transparent;
+            //Color pixel = bitmap2.GetPixel(0, 0);
+            Color pixel = chromaKeyColor;
+            Color transparent = Color.Red; //~Color.Transparent;
             int y = 0;
             while (true)
             {
