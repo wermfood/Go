@@ -76,9 +76,17 @@ namespace DisembodiedHeads
         {
             if (screenWindow != null && screenWindow.Handle != IntPtr.Zero)
             {
-                Image img = ScreenCapture.Capture2(screenWindow);
+                Image img = ScreenCapture.Capture3(screenWindow);
+                //IntPtr windowDC = User32.GetWindowDC(screenWindow.Handle);
+                //User32.RECT rect = new User32.RECT();
+                //User32.GetWindowRect(screenWindow.Handle, ref rect);
+
+
+                //Bitmap img = new MyScreen().CaptureWindow(screenWindow.Handle);
                 if (img != null)
                 {
+                    //img.Save("C:\\Hold\\Image.bmp");
+
                     float currentWidth = img.Width;
                     float currentHeight = img.Height;
                     float scaledWidth = currentWidth * m_ImageScale;
@@ -87,6 +95,8 @@ namespace DisembodiedHeads
                     Bitmap bmp = new Bitmap(img, new Size((int)scaledWidth, (int)scaledHeight));
                     img.Dispose();
                     this.pictureBox.BackgroundImage = bmp;
+
+                    
 
                     if (m_ImageScale != m_PreviousImageScale)
                     {
