@@ -1,31 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DisembodiedHeads
+﻿namespace DisembodiedHeads
 {
-    public partial class DoubleBufferedPictureBox : System.Windows.Forms.PictureBox
+    using System;
+    using System.ComponentModel;
+    using System.Windows.Forms;
+
+    public class DoubleBufferedPictureBox : PictureBox
     {
+        private IContainer components;
+
         public DoubleBufferedPictureBox()
         {
-            InitializeComponent();
-            DoubleBuffered = true;
-            this.SetStyle(
-                System.Windows.Forms.ControlStyles.UserPaint |
-                System.Windows.Forms.ControlStyles.AllPaintingInWmPaint |
-                System.Windows.Forms.ControlStyles.OptimizedDoubleBuffer,
-                true);
+            this.components = null;
+            this.InitializeComponent();
+            this.DoubleBuffered = true;
+            base.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
         }
 
         public DoubleBufferedPictureBox(IContainer container)
         {
+            this.components = null;
             container.Add(this);
+            this.InitializeComponent();
+        }
 
-            InitializeComponent();
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (this.components != null))
+            {
+                this.components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        private void InitializeComponent()
+        {
+            this.components = new Container();
         }
     }
 }
+

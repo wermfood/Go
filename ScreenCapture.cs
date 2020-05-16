@@ -90,7 +90,6 @@
                 IntPtr hObject = Gdi32.CreateCompatibleDC(windowDC);
                 IntPtr ptr3 = Gdi32.CreateCompatibleBitmap(windowDC, nWidth, nHeight);
                 Gdi32.BitBlt(hObject, 0, 0, nWidth, nHeight, windowDC, nXSrc, nYSrc, 0xcc0020);
-                //bool success = NativeMethods.BitBlt(hObject, 0, 0, nWidth, nHeight, windowDC, rect.left, rect.top, NativeMethods.RasterOperations.SRCCOPY | NativeMethods.RasterOperations.CAPTUREBLT);
                 Gdi32.SelectObject(hObject, Gdi32.SelectObject(hObject, ptr3));
                 Gdi32.DeleteDC(hObject);
                 User32.ReleaseDC(screenWindow.Handle, windowDC);

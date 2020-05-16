@@ -4,7 +4,7 @@
     using System.Runtime.InteropServices;
     using System.Security;
 
-    //[SuppressUnmanagedCodeSecurity]
+    [SuppressUnmanagedCodeSecurity]
     internal class Gdi32
     {
         public const int SRCCOPY = 0xcc0020;
@@ -13,8 +13,7 @@
         public static extern bool BitBlt(IntPtr hObject, int nXDest, int nYDest, int nWidth, int nHeight, IntPtr hObjectSource, int nXSrc, int nYSrc, int dwRop);
         [DllImport("gdi32.dll")]
         public static extern bool BitBlt(IntPtr hObject, int nXDest, int nYDest, int nWidth, int nHeight, IntPtr hObjSource, int nXSrc, int nYSrc, TernaryRasterOperations dwRop);
-        //[DllImport("gdi32.dll")]
-        [DllImport("gdi32.dll", EntryPoint = "CreateCompatibleBitmap")]
+        [DllImport("gdi32.dll")]
         public static extern IntPtr CreateCompatibleBitmap(IntPtr hDC, int nWidth, int nHeight);
         [DllImport("gdi32.dll")]
         public static extern IntPtr CreateCompatibleDC(IntPtr hDC);

@@ -6,7 +6,7 @@
     using System.Runtime.InteropServices;
     using System.Security;
 
-    //[SuppressUnmanagedCodeSecurity]
+    [SuppressUnmanagedCodeSecurity]
     internal class User32
     {
         private static List<IntPtr> _results = new List<IntPtr>();

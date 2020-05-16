@@ -1,21 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Wermwerx.Capture;
-
-namespace DisembodiedHeads
+﻿namespace DisembodiedHeads
 {
-    public partial class Main : Form
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Drawing;
+    using System.Drawing.Imaging;
+    using System.Runtime.InteropServices;
+    using System.Windows.Forms;
+    using Wermwerx.Capture;
+
+    public class Main : Form
     {
+        private Color m_ChromaColor = Color.LimeGreen;
+        private bool m_IsPickingChromaColor = false;
         private bool m_IsSnipped = false;
         private bool m_IsFramelessMode = false;
         private bool m_IsRubberBandBoxBeingDragged = false;
@@ -24,374 +21,342 @@ namespace DisembodiedHeads
         private Point m_MouseDownPoint = Point.Empty;
         private Size m_PreviousSize = Size.Empty;
         private FormWindowState m_PreviousWindowState = FormWindowState.Normal;
-        private float m_ImageScale = 1.0f;
-        private float m_PreviousImageScale = 1.0f;
+        private float m_ImageScale = 1f;
+        private float m_PreviousImageScale = 1f;
+        private IContainer components = null;
+        private ComboBox comboWindows;
+        private Timer timer;
+        private DoubleBufferedPictureBox pictureBox;
+        private DoubleBufferedPictureBox pictureBoxChromaColor;
+
         public Main()
         {
-            InitializeComponent();
-            InitializeForm();
+            this.InitializeComponent();
+            this.InitializeForm();
         }
 
-        private void InitializeForm()
+        private void AutoSizeWindow(Rectangle rect)
         {
-            this.DoubleBuffered = true;
-            this.SetStyle(
-                ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.UserPaint |
-                ControlStyles.DoubleBuffer,
-                true);
-
-            this.TopMost = true;
-
-            var screenWindows = ScreenWindow.AvailableWindows;
-            screenWindows.Insert(0, new ScreenWindow(IntPtr.Zero, "<Select Window>"));
-            comboWindows.DataSource = screenWindows;
-            comboWindows.DisplayMember = "Name";
-
-            this.MinimumSize = new Size(10, 10);
-
-            pictureBox.MouseWheel += PictureBox_MouseWheel;
-        }
-
-        private void PictureBox_MouseWheel(object sender, MouseEventArgs e)
-        {
-            if (m_IsSnipped)
+            int num = (base.Width - base.ClientSize.Width) / 2;
+            int num2 = (base.Height - base.ClientSize.Height) - (2 * num);
+            int num3 = this.comboWindows.Height + 15;
+            int num4 = 8;
+            if ((rect.Width > this.MinimumSize.Width) & (rect.Height > this.MinimumSize.Height))
             {
-                m_PreviousImageScale = m_ImageScale;
-                const float scale_per_delta = 0.1f / 120;
-                // Update the drawing based upon the mouse wheel scrolling.
-                m_ImageScale += e.Delta * scale_per_delta;
-                if (m_ImageScale < 0) m_ImageScale = 0;
+                this.m_PreviousSize = new Size(base.Size.Width, base.Size.Height);
+                this.m_PreviousWindowState = base.WindowState;
+                base.Size = new Size((rect.Width + num) + num4, (rect.Height + num2) + num3);
+                if (base.WindowState == FormWindowState.Maximized)
+                {
+                    base.WindowState = FormWindowState.Normal;
+                }
             }
         }
 
         private void comboWindows_SelectedValueChanged(object sender, EventArgs e)
         {
-            var screenWindow = ((ComboBox)sender).SelectedItem as ScreenWindow;
-            Render(screenWindow);
-            timer.Enabled = true;
+            ScreenWindow selectedItem = ((ComboBox) sender).SelectedItem as ScreenWindow;
+            this.Render(selectedItem);
+            if (this.pictureBox.Image != null)
+            {
+                this.m_ChromaColor = this.GetColorFromImage(this.pictureBox.Image, 0, 0);
+                this.pictureBoxChromaColor.Image = this.CreateSwatch(0x15, 0x15, this.m_ChromaColor);
+            }
+            this.timer.Enabled = true;
+        }
+
+        private Image CreateSwatch(int width, int height, Color color)
+        {
+            Bitmap image = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+            Graphics graphics = Graphics.FromImage(image);
+            graphics.Clear(color);
+            graphics.Dispose();
+            return image;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (this.components != null))
+            {
+                this.components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        public void DrawRubberBandBox(object sender, Point location)
+        {
+            DoubleBufferedPictureBox box = sender as DoubleBufferedPictureBox;
+            box.Refresh();
+            using (Graphics graphics = box.CreateGraphics())
+            {
+                Rectangle rect = GetRectangle(this.m_MouseDownPoint, location);
+                graphics.DrawRectangle(Pens.Red, rect);
+                this.m_LastLocation = location;
+            }
+        }
+
+        private Color GetColorFromImage(Image image, int x, int y)
+        {
+            Color chromaColor = this.m_ChromaColor;
+            LockBitmap bitmap2 = new LockBitmap(new Bitmap(image));
+            try
+            {
+                bitmap2.LockBits();
+                chromaColor = bitmap2.GetPixel(x, y);
+                bitmap2.UnlockBits();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception.Message);
+                Console.WriteLine(exception.StackTrace);
+            }
+            return chromaColor;
+        }
+
+        public static Rectangle GetRectangle(Point p1, Point p2) => 
+            new Rectangle(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y), Math.Abs((int) (p1.X - p2.X)), Math.Abs((int) (p1.Y - p2.Y)));
+
+        private void InitializeComponent()
+        {
+            this.components = new Container();
+            ComponentResourceManager manager = new ComponentResourceManager(typeof(Main));
+            this.comboWindows = new ComboBox();
+            this.timer = new Timer(this.components);
+            this.pictureBoxChromaColor = new DoubleBufferedPictureBox(this.components);
+            this.pictureBox = new DoubleBufferedPictureBox(this.components);
+            ((ISupportInitialize) this.pictureBoxChromaColor).BeginInit();
+            ((ISupportInitialize) this.pictureBox).BeginInit();
+            base.SuspendLayout();
+            this.comboWindows.FormattingEnabled = true;
+            this.comboWindows.Location = new Point(0, 0);
+            this.comboWindows.Name = "comboWindows";
+            this.comboWindows.Size = new Size(0x2fe, 0x15);
+            this.comboWindows.TabIndex = 1;
+            this.comboWindows.SelectedValueChanged += new EventHandler(this.comboWindows_SelectedValueChanged);
+            this.timer.Interval = 1;
+            this.timer.Tick += new EventHandler(this.timer_Tick);
+            this.pictureBoxChromaColor.BorderStyle = BorderStyle.FixedSingle;
+            this.pictureBoxChromaColor.Location = new Point(0x305, 0);
+            this.pictureBoxChromaColor.Name = "pictureBoxChromaColor";
+            this.pictureBoxChromaColor.Size = new Size(0x15, 0x15);
+            this.pictureBoxChromaColor.TabIndex = 3;
+            this.pictureBoxChromaColor.TabStop = false;
+            this.pictureBoxChromaColor.MouseUp += new MouseEventHandler(this.pictureBoxChromaColor_MouseUp);
+            this.pictureBox.BackgroundImageLayout = ImageLayout.None;
+            this.pictureBox.Dock = DockStyle.Fill;
+            this.pictureBox.Location = new Point(0, 0);
+            this.pictureBox.Name = "pictureBox";
+            this.pictureBox.Size = new Size(800, 450);
+            this.pictureBox.TabIndex = 2;
+            this.pictureBox.TabStop = false;
+            this.pictureBox.MouseDown += new MouseEventHandler(this.Main_MouseDown);
+            this.pictureBox.MouseMove += new MouseEventHandler(this.Main_MouseMove);
+            this.pictureBox.MouseUp += new MouseEventHandler(this.Main_MouseUp);
+            base.AutoScaleDimensions = new SizeF(6f, 13f);
+            base.AutoScaleMode = AutoScaleMode.Font;
+            this.BackgroundImageLayout = ImageLayout.None;
+            base.ClientSize = new Size(800, 450);
+            base.Controls.Add(this.pictureBoxChromaColor);
+            base.Controls.Add(this.comboWindows);
+            base.Controls.Add(this.pictureBox);
+            //base.Icon = (Icon) manager.GetObject("$this.Icon");
+            base.Name = "Main";
+            this.Text = "Disembodied Heads";
+            ((ISupportInitialize) this.pictureBoxChromaColor).EndInit();
+            ((ISupportInitialize) this.pictureBox).EndInit();
+            base.ResumeLayout(false);
+        }
+
+        private void InitializeForm()
+        {
+            this.DoubleBuffered = true;
+            base.SetStyle(ControlStyles.DoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            base.TopMost = true;
+            List<ScreenWindow> availableWindows = ScreenWindow.AvailableWindows;
+            availableWindows.Insert(0, new ScreenWindow(IntPtr.Zero, "<Select Window>"));
+            this.comboWindows.DataSource = availableWindows;
+            this.comboWindows.DisplayMember = "Name";
+            this.MinimumSize = new Size(10, 10);
+            this.pictureBoxChromaColor.Image = this.CreateSwatch(0x15, 0x15, this.m_ChromaColor);
+            this.pictureBox.MouseWheel += new MouseEventHandler(this.PictureBox_MouseWheel);
+        }
+
+        private void Main_MouseDown(object sender, MouseEventArgs e)
+        {
+            if ((e.Button == MouseButtons.Left) && !this.m_IsPickingChromaColor)
+            {
+                if (this.m_IsFramelessMode || this.m_IsSnipped)
+                {
+                    this.m_IsFormBeingDragged = true;
+                    this.m_LastLocation = e.Location;
+                }
+                else
+                {
+                    this.m_IsRubberBandBoxBeingDragged = true;
+                    DoubleBufferedPictureBox box = sender as DoubleBufferedPictureBox;
+                    this.m_MouseDownPoint = e.Location;
+                }
+            }
+        }
+
+        private void Main_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (this.m_IsPickingChromaColor)
+            {
+                Cursor.Current = Cursors.Cross;
+                this.pictureBoxChromaColor.Image.Dispose();
+                this.pictureBoxChromaColor.Image = this.CreateSwatch(0x15, 0x15, this.GetColorFromImage(this.pictureBox.Image, e.X, e.Y));
+            }
+            if ((e.Button == MouseButtons.Left) && !this.m_IsPickingChromaColor)
+            {
+                if (!this.m_IsFramelessMode)
+                {
+                    if (this.m_IsRubberBandBoxBeingDragged)
+                    {
+                        DoubleBufferedPictureBox box = sender as DoubleBufferedPictureBox;
+                        this.DrawRubberBandBox(sender, e.Location);
+                    }
+                }
+                else if (this.m_IsFormBeingDragged)
+                {
+                    int x = (base.Location.X - this.m_LastLocation.X) + e.X;
+                    base.Location = new Point(x, (base.Location.Y - this.m_LastLocation.Y) + e.Y);
+                    base.Update();
+                }
+            }
+        }
+
+        private void Main_MouseUp(object sender, MouseEventArgs e)
+        {
+            if ((e.Button == MouseButtons.Left) && !this.m_IsSnipped)
+            {
+                if (this.m_IsPickingChromaColor)
+                {
+                    this.m_IsPickingChromaColor = false;
+                    this.m_ChromaColor = this.GetColorFromImage(this.pictureBoxChromaColor.Image, 0, 0);
+                    Cursor.Current = Cursors.Default;
+                }
+                if (this.m_IsFramelessMode || this.m_IsPickingChromaColor)
+                {
+                    this.m_IsFormBeingDragged = false;
+                    this.m_LastLocation = Point.Empty;
+                }
+                else if (this.m_IsRubberBandBoxBeingDragged)
+                {
+                    this.m_IsRubberBandBoxBeingDragged = false;
+                    Rectangle rect = GetRectangle(this.m_MouseDownPoint, e.Location);
+                    ((ScreenWindow) this.comboWindows.SelectedItem).SelectedRectangle = rect;
+                    this.m_MouseDownPoint = Point.Empty;
+                    this.m_LastLocation = Point.Empty;
+                    this.AutoSizeWindow(rect);
+                    this.comboWindows.Visible = false;
+                    base.MinimizeBox = false;
+                    base.MaximizeBox = false;
+                    this.m_IsSnipped = true;
+                }
+            }
+            if (e.Button == MouseButtons.Right)
+            {
+                if (this.m_IsPickingChromaColor)
+                {
+                    this.m_IsPickingChromaColor = false;
+                }
+                else
+                {
+                    Rectangle clientRectangle = base.ClientRectangle;
+                    this.Toggle(false);
+                    base.Location = new Point(base.Location.X + clientRectangle.X, base.Location.Y + clientRectangle.Y);
+                }
+            }
+            if (((e.Button == MouseButtons.Middle) && !this.m_IsPickingChromaColor) && !this.m_IsFramelessMode)
+            {
+                ((ScreenWindow) this.comboWindows.SelectedItem).SelectedRectangle = Rectangle.Empty;
+                base.Size = this.m_PreviousSize;
+                base.WindowState = this.m_PreviousWindowState;
+                this.m_ImageScale = 1f;
+                this.m_IsSnipped = false;
+                this.Toggle(true);
+            }
+        }
+
+        private void PictureBox_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if (this.m_IsSnipped)
+            {
+                this.m_PreviousImageScale = this.m_ImageScale;
+                this.m_ImageScale += e.Delta * 0.0008333334f;
+                if (this.m_ImageScale < 0f)
+                {
+                    this.m_ImageScale = 0f;
+                }
+            }
+        }
+
+        private void pictureBoxChromaColor_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                this.m_IsPickingChromaColor = true;
+                Cursor.Current = Cursors.Cross;
+            }
         }
 
         private void Render(ScreenWindow screenWindow)
         {
-            if (screenWindow != null && screenWindow.Handle != IntPtr.Zero)
+            if ((screenWindow != null) && (screenWindow.Handle != IntPtr.Zero))
             {
-                Image img = ScreenCapture.Capture3(screenWindow);
-                //IntPtr windowDC = User32.GetWindowDC(screenWindow.Handle);
-                //User32.RECT rect = new User32.RECT();
-                //User32.GetWindowRect(screenWindow.Handle, ref rect);
-
-
-                //Bitmap img = new MyScreen().CaptureWindow(screenWindow.Handle);
-                if (img != null)
+                Image original = ScreenCapture.Capture3(screenWindow);
+                if (original != null)
                 {
-                    //img.Save("C:\\Hold\\Image.bmp");
-
-                    float currentWidth = img.Width;
-                    float currentHeight = img.Height;
-                    float scaledWidth = currentWidth * m_ImageScale;
-                    float scaledHeight = currentHeight * m_ImageScale;
-
-                    Bitmap bmp = new Bitmap(img, new Size((int)scaledWidth, (int)scaledHeight));
-                    img.Dispose();
-                    this.pictureBox.BackgroundImage = bmp;
-
-                    
-
-                    if (m_ImageScale != m_PreviousImageScale)
+                    float num3 = original.Width * this.m_ImageScale;
+                    float num4 = original.Height * this.m_ImageScale;
+                    Bitmap bitmap = new Bitmap(original, new Size((int) num3, (int) num4));
+                    original.Dispose();
+                    this.pictureBox.Image = bitmap;
+                    if (!(this.m_ImageScale == this.m_PreviousImageScale))
                     {
-                        AutoSizeWindow(new Rectangle(0, 0, (int)scaledWidth, (int)scaledHeight));
+                        this.AutoSizeWindow(new Rectangle(0, 0, (int) num3, (int) num4));
                     }
-
                 }
             }
-            if (m_IsRubberBandBoxBeingDragged)
+            if (this.m_IsRubberBandBoxBeingDragged)
             {
-                DrawRubberBandBox(pictureBox, m_LastLocation);
+                this.DrawRubberBandBox(this.pictureBox, this.m_LastLocation);
             }
-            
-
             GC.Collect();
         }
 
         private void timer_Tick(object sender, EventArgs e)
         {
-            Render(this.comboWindows.SelectedItem as ScreenWindow);
+            this.Render(this.comboWindows.SelectedItem as ScreenWindow);
         }
 
-        private void Main_MouseDown(object sender, MouseEventArgs e)
+        private void Toggle(bool forceDefaultReset = false)
         {
-            if (e.Button== MouseButtons.Left)
+            this.m_IsFramelessMode = !forceDefaultReset && !this.m_IsFramelessMode;
+            if (this.m_IsFramelessMode)
             {
-                if (!m_IsFramelessMode && !m_IsSnipped)
-                {
-                    m_IsRubberBandBoxBeingDragged = true;
-                    DoubleBufferedPictureBox box = sender as DoubleBufferedPictureBox;
-                    //~m_MouseDownPoint = box.PointToClient(e.Location);
-                    m_MouseDownPoint = e.Location;
-                }else
-                {
-                    m_IsFormBeingDragged = true;
-                    m_LastLocation = e.Location;
-                }
-            }
-            #region OLD-Microsoft
-            //// Set the isDrag variable to true and get the starting point 
-            //// by using the PointToScreen method to convert form 
-            //// coordinates to screen coordinates.
-            //if (e.Button == MouseButtons.Left)
-            //{
-            //    m_IsDrag = true;
-            //    Control control = (Control)sender;
-
-            //    // Calculate the startPoint by using the PointToScreen 
-            //    // method.
-            //    m_StartPoint = control.PointToScreen(new Point(e.X, e.Y));
-            //}
-            #endregion
-
-
-        }
-
-        static public Rectangle GetRectangle(Point p1, Point p2)
-        {
-            return new Rectangle(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y),
-                Math.Abs(p1.X - p2.X), Math.Abs(p1.Y - p2.Y));
-        }
-
-        public void DrawRubberBandBox(object sender,Point location)
-        {
-            DoubleBufferedPictureBox box = sender as DoubleBufferedPictureBox;
-            box.Refresh();
-            using (Graphics g = box.CreateGraphics())
-            {
-                Rectangle rect = GetRectangle(m_MouseDownPoint, location);
-                g.DrawRectangle(Pens.Red, rect);
-                m_LastLocation = location;
-            }
-
-            //ControlPaint.DrawReversibleFrame(m_TheRectangle,
-            //    this.BackColor, FrameStyle.Dashed);
-
-            // Calculate the endpoint and dimensions for the new 
-            // rectangle, again using the PointToScreen method.
-            //Point endPoint = ((Control)sender).PointToScreen(new Point(x,y));
-
-            //int width = endPoint.X - m_StartPoint.X;
-            //int height = endPoint.Y - m_StartPoint.Y;
-            //m_TheRectangle = new Rectangle(m_StartPoint.X,
-            //    m_StartPoint.Y, width, height);
-
-            // Draw the new rectangle by calling DrawReversibleFrame
-            // again.  
-            //ControlPaint.DrawReversibleFrame(m_TheRectangle,
-            //    this.BackColor, FrameStyle.Dashed);
-
-        }
-        private void Main_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.Button == System.Windows.Forms.MouseButtons.Left)
-            {
-                if (!m_IsFramelessMode)
-                {
-                    if (m_IsRubberBandBoxBeingDragged)
-                    {
-                        DoubleBufferedPictureBox box = sender as DoubleBufferedPictureBox;
-                        DrawRubberBandBox(sender, e.Location);
-                        //~DrawRubberBandBox(sender, box.PointToClient(e.Location));
-                    }
-                }else
-                {
-                    if (m_IsFormBeingDragged)
-                    {
-                        int xLocation = this.Location.X - m_LastLocation.X + e.X;
-                        int yLocation = this.Location.Y - m_LastLocation.Y + e.Y;
-
-                        this.Location = new Point(xLocation, yLocation);
-                        this.Update();
-                    }
-                }
-            }
-
-
-            #region OLD-MS
-            // If the mouse is being dragged, 
-            // undraw and redraw the rectangle as the mouse moves.
-            //if (m_IsDrag)
-            //{
-            //    DrawRubberBandBox(sender,e.X, e.Y);
-            //}
-
-            //// Hide the previous rectangle by calling the 
-            //// DrawReversibleFrame method with the same parameters.
-
-            //{
-            //    ControlPaint.DrawReversibleFrame(m_TheRectangle,
-            //        this.BackColor, FrameStyle.Dashed);
-
-            //    // Calculate the endpoint and dimensions for the new 
-            //    // rectangle, again using the PointToScreen method.
-            //    Point endPoint = ((Control)sender).PointToScreen(new Point(e.X, e.Y));
-
-            //    int width = endPoint.X - m_StartPoint.X;
-            //    int height = endPoint.Y - m_StartPoint.Y;
-            //    m_TheRectangle = new Rectangle(m_StartPoint.X,
-            //        m_StartPoint.Y, width, height);
-
-            //    // Draw the new rectangle by calling DrawReversibleFrame
-            //    // again.  
-            //    ControlPaint.DrawReversibleFrame(m_TheRectangle,
-            //        this.BackColor, FrameStyle.Dashed);
-            //}
-            #endregion
-        }
-        private void Main_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button== MouseButtons.Left && !m_IsSnipped)
-            {
-                if (!m_IsFramelessMode)
-                {
-                    if (m_IsRubberBandBoxBeingDragged == true)
-                    {
-                        m_IsRubberBandBoxBeingDragged = false;
-                        Rectangle rect = GetRectangle(m_MouseDownPoint, e.Location);
-                        ((ScreenWindow)comboWindows.SelectedItem).SelectedRectangle = rect;
-                        m_MouseDownPoint = Point.Empty;
-                        m_LastLocation = Point.Empty;
-
-                        //* Calculate the Border/Toolbar size
-                        AutoSizeWindow(rect);
-                        //int borderWidth = (this.Width - this.ClientSize.Width) / 2;
-                        //int titleBarHeight = this.Height - this.ClientSize.Height - 2 * borderWidth;
-                        //int comboHeight = comboWindows.Height + 15;
-                        //int extraWidth = 8;
-                        //if (rect.Width > this.MinimumSize.Width & rect.Height > this.MinimumSize.Height)
-                        //{
-                        //    m_PreviousSize = new Size(Size.Width, Size.Height);
-                        //    m_PreviousWindowState = this.WindowState;
-                        //    this.Size = new Size(rect.Width + borderWidth+extraWidth, rect.Height + titleBarHeight + comboHeight);
-                        //    if (this.WindowState == FormWindowState.Maximized)
-                        //    {
-                        //        this.WindowState = FormWindowState.Normal;
-                        //    }
-                        //}
-
-                        comboWindows.Visible = false;
-                        this.MinimizeBox = false;
-                        this.MaximizeBox = false;
-                        //this.ControlBox = false;
-                        m_IsSnipped = true;
-                    }
-                }else
-                {
-                    m_IsFormBeingDragged = false;
-                    m_LastLocation = Point.Empty;
-                }
-            }
-            if (e.Button == MouseButtons.Right)
-            {
-                var rect = this.ClientRectangle;
-                Toggle();
-                this.Location = new Point(this.Location.X + rect.X , this.Location.Y + rect.Y);
-            }
-            if (e.Button== MouseButtons.Middle)
-            {
-                if (!m_IsFramelessMode)
-                {
-                    ((ScreenWindow)comboWindows.SelectedItem).SelectedRectangle = Rectangle.Empty;
-                    this.Size = m_PreviousSize;
-                    this.WindowState = m_PreviousWindowState;
-                    m_ImageScale = 1;
-                    Toggle(true);
-                }
-            }
-
-
-
-            //~Point start = pictureBox.PointToScreen(new Point(rect.X, rect.Y));
-
-
-
-            //((ScreenWindow)comboWindows.SelectedItem).SelectedPoint = start;
-            #region OLD-MS
-            //// If the MouseUp event occurs, the user is not dragging.
-            //if (e.Button == MouseButtons.Left)
-            //{
-            //    m_IsDrag = false;
-
-            //    // Draw the rectangle to be evaluated. Set a dashed frame style 
-            //    // using the FrameStyle enumeration.
-            //    ControlPaint.DrawReversibleFrame(m_TheRectangle,
-            //        this.BackColor, FrameStyle.Dashed);
-
-            //    // Find out which controls intersect the rectangle and 
-            //    // change their color. The method uses the RectangleToScreen  
-            //    // method to convert the Control's client coordinates 
-            //    // to screen coordinates.
-            //    Rectangle controlRectangle;
-            //    for (int i = 0; i < Controls.Count; i++)
-            //    {
-            //        controlRectangle = Controls[i].RectangleToScreen
-            //            (Controls[i].ClientRectangle);
-            //        if (controlRectangle.IntersectsWith(m_TheRectangle))
-            //        {
-            //            Controls[i].BackColor = Color.BurlyWood;
-            //        }
-            //    }
-
-
-            //    ((ScreenWindow)comboWindows.SelectedItem).SelectedRectangle = new Rectangle(m_TheRectangle.X, m_TheRectangle.Y, m_TheRectangle.Width, m_TheRectangle.Height);
-
-
-
-            //    // Reset the rectangle.
-            //    m_TheRectangle = new Rectangle(0, 0, 0, 0);
-            //}
-            #endregion
-
-        }
-
-        private void AutoSizeWindow(Rectangle rect)
-        {
-            int borderWidth = (this.Width - this.ClientSize.Width) / 2;
-            int titleBarHeight = this.Height - this.ClientSize.Height - 2 * borderWidth;
-            int comboHeight = comboWindows.Height + 15;
-            int extraWidth = 8;
-            if (rect.Width > this.MinimumSize.Width & rect.Height > this.MinimumSize.Height)
-            {
-                m_PreviousSize = new Size(Size.Width, Size.Height);
-                m_PreviousWindowState = this.WindowState;
-                this.Size = new Size(rect.Width + borderWidth + extraWidth, rect.Height + titleBarHeight + comboHeight);
-                if (this.WindowState == FormWindowState.Maximized)
-                {
-                    this.WindowState = FormWindowState.Normal;
-                }
-            }
-        }
-
-        private void Toggle(bool forceDefaultReset=false)
-        {
-            if (!forceDefaultReset)
-            {
-                m_IsFramelessMode = !m_IsFramelessMode;
-            }else
-            {
-                m_IsFramelessMode = false;
-            }
-            if (m_IsFramelessMode)
-            {
-                BackColor = Color.Lime;
-                TransparencyKey = Color.Lime;
-                FormBorderStyle = FormBorderStyle.None;
-                //comboWindows.Visible = false;
+                this.BackColor = this.m_ChromaColor;
+                base.TransparencyKey = this.m_ChromaColor;
+                base.FormBorderStyle = FormBorderStyle.None;
             }
             else
             {
-                BackColor = Color.Empty;
-                TransparencyKey = Color.Empty;
-                FormBorderStyle = FormBorderStyle.Sizable;
-                //comboWindows.Visible = true;
+                this.BackColor = Color.Empty;
+                base.TransparencyKey = Color.Empty;
+                base.FormBorderStyle = FormBorderStyle.Sizable;
+                if (this.m_IsSnipped)
+                {
+                    this.comboWindows.Visible = false;
+                    this.pictureBoxChromaColor.Visible = false;
+                }
+                else
+                {
+                    this.comboWindows.Visible = true;
+                    this.pictureBoxChromaColor.Visible = true;
+                }
             }
         }
     }
 }
+
