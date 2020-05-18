@@ -8,9 +8,15 @@
         [STAThread]
         private static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new DisembodiedHeads.Main());
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new DisembodiedHeads.Main());
+            }finally
+            {
+
+            }
         }
     }
 }
