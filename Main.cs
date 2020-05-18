@@ -366,6 +366,7 @@
 
         private void timer_Tick(object sender, EventArgs e)
         {
+            Application.DoEvents();
             this.Render(this.comboWindows.SelectedItem as ScreenWindow);
         }
 
